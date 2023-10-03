@@ -1,12 +1,30 @@
 import 'dart:ffi';
-
-import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter/material.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:google_sign_in/google_sign_in.dart';
+import 'package:riverpod/riverpod.dart';
 import 'firebase_options.dart';
+import 'package:firebase_database/firebase_database.dart';
+
+final FirebaseFirestore firestore = FirebaseFirestore.instance;
 
 int Screen = 0;
-int num = 0;
+FirebaseDatabase db = FirebaseDatabase.instance;
+
+DatabaseReference goodsDB = db.ref('Goods');
+DatabaseReference MaxSerial = db.ref('MaxSerial');
+
+
+
 List<String> items = List.generate(100, (index) => "물건 $index");
+
+Future<void> signInWithGoogle(BuildContext context) async {
+  GoogleSignIn _googleSignIn = GoogleSignIn();
+  GoogleSignInAccount? _account = await _googleSignIn.signIn();
+}
+
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp(
@@ -20,7 +38,7 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-        home: MyHomePage()
+        home: MyAuthPage()
     );
   }
 }
@@ -31,14 +49,22 @@ class MyHomePage extends StatefulWidget {
 }
 
 class _MyHomePageState extends State<MyHomePage> {
-
-
+  int num = 0; // int로 변경
+  List<String> items = List.generate(100, (index) => "물건 $index");
+  late String temp;
   @override
   Widget build(BuildContext context) {
+    final user = FirebaseAuth.instance.currentUser;
+
+    if(user != null){
+      temp = user.displayName ?? "Default Name"; // displayName이 null인 경우 "Default Name"을 사용
+    }else{
+      temp = "asd";
+    }
     return Scaffold(
       appBar: AppBar(
-        title: const Text(
-          "ActionStore",
+        title: Text (
+          "ActionStore        $temp",
           style: TextStyle(
             color: Colors.white,
             fontWeight: FontWeight.bold,
@@ -53,7 +79,6 @@ class _MyHomePageState extends State<MyHomePage> {
           IconButton(
             onPressed: () {
               setState(() {
-                num++;
                 Screen = 0;
               });
             },
@@ -62,7 +87,6 @@ class _MyHomePageState extends State<MyHomePage> {
           IconButton(
             onPressed: () {
               setState(() {
-                num = num + num;
                 Screen = 1;
               });
             },
@@ -72,50 +96,152 @@ class _MyHomePageState extends State<MyHomePage> {
       ),
     );
   }
-  Widget BodyView(){
-    if(Screen == 0){
+
+  Widget BodyView() {
+    if (Screen == 0) {
       return ListView.builder(
-            itemCount: num, // 항목의 수
-            itemBuilder: (BuildContext context, int index) {
-              return InkWell(
-                onTap: () {
-                  setState(() {
-                    if(items[index] == "물건 클릭") items[index] = "물건 $index";
-                    else items[index] = "물건 클릭";
-                  });
-                },
-                child: Container(
-                  height: 80,
-                  decoration: BoxDecoration(
-                    border: Border.all(
-                      color: Colors.black,
-                      width: 0.7,
+        itemCount: num,
+        itemBuilder: (BuildContext context, int index) {
+          return InkWell(
+            onTap: () {
+              setState(() {
+                if (items[index] == "물건 클릭")
+                  items[index] = "물건 $index";
+                else
+                  items[index] = "물건 클릭";
+              });
+            },
+            child: Container(
+              height: 80,
+              decoration: BoxDecoration(
+                border: Border.all(
+                  color: Colors.black,
+                  width: 0.7,
+                ),
+              ),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: ListTile(
+                      titleAlignment: ListTileTitleAlignment.center,
+                      title: Text(items[index]),
                     ),
                   ),
-                  child: Row(
+                  Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      Expanded(
-                        child: ListTile(
-                          titleAlignment: ListTileTitleAlignment.center,
-                          title: Text(items[index]),
-                        ),
-                      ),
-                      Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Text("물건"),
-                          Text("가격")
-                        ],
-                      )
+                      Text("물건"),
+                      Text("가격"),
                     ],
                   ),
-
-                ),
-              );
-            },
+                ],
+              ),
+            ),
           );
-    }else return Scaffold(
-      body: Text("아이템 등록 할거임"),
+        },
+      );
+    } else {
+      return Scaffold(
+        body: Row(
+          children: [
+            Text("내정보 만들거임"),
+            IconButton(
+              icon: Icon(Icons.logout),
+              onPressed: () {
+                _handleSignOut(context);
+              },
+            )
+          ],
+        ),
+      );
+    }
+  }
+}
+class MyAuthPage extends StatelessWidget {
+  final FirebaseAuth _auth = FirebaseAuth.instance;
+  final GoogleSignIn _googleSignIn = GoogleSignIn();
+
+
+  Future<User?> _handleSignIn(BuildContext context) async {
+    await _auth.signOut();
+    await _googleSignIn.signOut();
+    try {
+      final GoogleSignInAccount? googleSignInAccount = await _googleSignIn.signIn();
+      if (googleSignInAccount != null) {
+        final GoogleSignInAuthentication googleSignInAuthentication =
+        await googleSignInAccount.authentication;
+        final AuthCredential credential = GoogleAuthProvider.credential(
+          accessToken: googleSignInAuthentication.accessToken,
+          idToken: googleSignInAuthentication.idToken,
+        );
+        final UserCredential authResult = await _auth.signInWithCredential(credential);
+        final User? user = authResult.user;
+        return user;
+      }
+    } catch (error) {
+      print(error);
+      return null;
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: Text('로그인 화면'),
+      ),
+      body: Center(
+        child: ElevatedButton(
+          onPressed: () async {
+            final User? user = await _handleSignIn(context);
+            if (user != null) {
+              // 로그인 성공 시 처리
+              print('Signed in: ${user.displayName}');
+              Navigator.of(context).push(
+                  MaterialPageRoute(
+                  builder: (context) => MyHomePage()));
+            } else {
+              // 로그인 실패 시 처리
+              print('Sign-in failed.');
+            }
+          },
+          child: Text('구글 로그인'),
+        ),
+      ),
     );
+  }
+}
+void _handleSignOut(BuildContext context) async {
+  final FirebaseAuth _auth = FirebaseAuth.instance;
+  try {
+    await _auth.signOut();
+    Navigator.of(context).pushAndRemoveUntil(
+      MaterialPageRoute(
+        builder: (context) => MyAuthPage(),
+      ),
+          (route) => false,
+    );
+  } catch (e) {
+    print("로그아웃 오류: $e");
+  }
+}
+
+class Users {
+  // 멤버 변수 (인스턴스 변수)
+  String name;
+  String Uid;
+
+  // 생성자
+  Users(this.name, this.Uid);
+
+  void add(String name, String Uid) async{
+    name = this.name;
+    Uid = this.Uid;
+
+    await firestore.collection('users').add({
+      'name': name,
+      'email': Uid,
+    });
+
   }
 }

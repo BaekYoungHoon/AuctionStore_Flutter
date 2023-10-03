@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>CLIENT_ID</key>
+	<string>978205454969-g7tbt9qk482j61u3f7fike73r4ah0evl.apps.googleusercontent.com</string>
+	<key>REVERSED_CLIENT_ID</key>
+	<string>com.googleusercontent.apps.978205454969-g7tbt9qk482j61u3f7fike73r4ah0evl</string>
+	<key>ANDROID_CLIENT_ID</key>
+	<string>978205454969-imn2m0p3r4vtajqenh6017s693tcrl82.apps.googleusercontent.com</string>
+	<key>API_KEY</key>
+	<string>AIzaSyAHILizaM14hPcqVj5KzesOshF10fjPB7I</string>
+	<key>GCM_SENDER_ID</key>
+	<string>978205454969</string>
+	<key>PLIST_VERSION</key>
+	<string>1</string>
+	<key>BUNDLE_ID</key>
+	<string>com.hoon.auctionstoref</string>
+	<key>PROJECT_ID</key>
+	<string>hoon-e7f3c</string>
+	<key>STORAGE_BUCKET</key>
+	<string>hoon-e7f3c.appspot.com</string>
+	<key>IS_ADS_ENABLED</key>
+	<false></false>
+	<key>IS_ANALYTICS_ENABLED</key>
+	<false></false>
+	<key>IS_APPINVITE_ENABLED</key>
+	<true></true>
+	<key>IS_GCM_ENABLED</key>
+	<true></true>
+	<key>IS_SIGNIN_ENABLED</key>
+	<true></true>
+	<key>GOOGLE_APP_ID</key>
+	<string>1:978205454969:ios:f089f5003e12a002f11aa8</string>
+	<key>DATABASE_URL</key>
+	<string>https://hoon-e7f3c-default-rtdb.firebaseio.com</string>
+</dict>
+</plist>
