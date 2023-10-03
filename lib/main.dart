@@ -6,17 +6,12 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:riverpod/riverpod.dart';
 import 'firebase_options.dart';
-import 'package:firebase_database/firebase_database.dart';
 
 final FirebaseFirestore firestore = FirebaseFirestore.instance;
 
 int Screen = 0;
-FirebaseDatabase db = FirebaseDatabase.instance;
-
-DatabaseReference goodsDB = db.ref('Goods');
-DatabaseReference MaxSerial = db.ref('MaxSerial');
-
-
+String? userUid = "";
+String? userName = "";
 
 List<String> items = List.generate(100, (index) => "물건 $index");
 
@@ -51,20 +46,12 @@ class MyHomePage extends StatefulWidget {
 class _MyHomePageState extends State<MyHomePage> {
   int num = 0; // int로 변경
   List<String> items = List.generate(100, (index) => "물건 $index");
-  late String temp;
   @override
   Widget build(BuildContext context) {
-    final user = FirebaseAuth.instance.currentUser;
-
-    if(user != null){
-      temp = user.displayName ?? "Default Name"; // displayName이 null인 경우 "Default Name"을 사용
-    }else{
-      temp = "asd";
-    }
     return Scaffold(
       appBar: AppBar(
         title: Text (
-          "ActionStore        $temp",
+          "방구석 경매        $userName",
           style: TextStyle(
             color: Colors.white,
             fontWeight: FontWeight.bold,
@@ -80,6 +67,7 @@ class _MyHomePageState extends State<MyHomePage> {
             onPressed: () {
               setState(() {
                 Screen = 0;
+                num++;
               });
             },
             icon: Icon(Icons.card_travel),
@@ -142,14 +130,19 @@ class _MyHomePageState extends State<MyHomePage> {
       );
     } else {
       return Scaffold(
-        body: Row(
+        body: Column(
           children: [
             Text("내정보 만들거임"),
-            IconButton(
-              icon: Icon(Icons.logout),
-              onPressed: () {
-                _handleSignOut(context);
-              },
+            Row(
+              children: [
+                Text("로그아웃"),
+                IconButton(
+                  icon: Icon(Icons.logout),
+                  onPressed: () {
+                    _handleSignOut(context);
+                  },
+                )
+              ],
             )
           ],
         ),
@@ -194,8 +187,15 @@ class MyAuthPage extends StatelessWidget {
         child: ElevatedButton(
           onPressed: () async {
             final User? user = await _handleSignIn(context);
+
             if (user != null) {
               // 로그인 성공 시 처리
+              await _googleSignIn.signOut();
+
+              Users User = Users(user.displayName, user.uid);
+              User.add(user.uid);
+              userUid = user.uid;
+              userName = user.displayName;
               print('Signed in: ${user.displayName}');
               Navigator.of(context).push(
                   MaterialPageRoute(
@@ -228,20 +228,45 @@ void _handleSignOut(BuildContext context) async {
 
 class Users {
   // 멤버 변수 (인스턴스 변수)
-  String name;
-  String Uid;
+  String? name;
+  String? Uid;
 
   // 생성자
   Users(this.name, this.Uid);
 
-  void add(String name, String Uid) async{
-    name = this.name;
-    Uid = this.Uid;
+  void add(String user) async{
+    final querySnapshot = await FirebaseFirestore.instance.collection('users').get();
 
-    await firestore.collection('users').add({
-      'name': name,
-      'email': Uid,
+    if (querySnapshot.docs.isNotEmpty) {
+      // 컬렉션에 문서가 존재하면 각 문서의 데이터를 출력합니다.
+      for (final documentSnapshot in querySnapshot.docs) {
+        final data = documentSnapshot.data() as Map<String, dynamic>;
+        print('사용자 데이터: $data');
+        if(documentSnapshot.id == userUid) {
+          print("이미 가입된 계정 입니다. \nUID : ${documentSnapshot.id}");
+        }else {
+          firestore.collection('users').doc(user).set({
+            'name': name,
+            'Uid': Uid,
+          });
+        }
+      }
+    }
+  }
+  void Read() async{
+    final document = await firestore.collection('users').doc('documentId').get();
+    if (document.exists) {
+      print('Document data: ${document.data()}');
+    } else {
+      print('Document does not exist');
+    }
+  }
+  void Update() async{
+    await firestore.collection('users').doc('documentId').update({
+      'name': 'Jane Doe',
     });
+  }
+  void Delete() async{
 
   }
 }
