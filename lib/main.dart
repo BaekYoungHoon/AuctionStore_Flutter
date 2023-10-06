@@ -9,11 +9,48 @@ import 'firebase_options.dart';
 
 final FirebaseFirestore firestore = FirebaseFirestore.instance;
 
+final FirebaseAuth _auth = FirebaseAuth.instance;
+final GoogleSignIn _googleSignIn = GoogleSignIn();
+
 int Screen = 0;
 String? userUid = "";
 String? userName = "";
+int itemLength = 0;
 
-List<String> items = List.generate(100, (index) => "물건 $index");
+Future<int> itemsLength() async {
+  try {
+    final querySnapshot = await FirebaseFirestore.instance.collection('items').get();
+
+    final documentCount = querySnapshot.docs.length;
+    print('컬렉션 내의 문서 수: $documentCount');
+    return itemLength = documentCount;
+  } catch (e) {
+    print('문서 수 확인 오류: $e');
+    return 0;
+  }
+}
+
+Future<User?> _handleSignIn(BuildContext context) async {
+  await _auth.signOut();
+  await _googleSignIn.signOut();
+  try {
+    final GoogleSignInAccount? googleSignInAccount = await _googleSignIn.signIn();
+    if (googleSignInAccount != null) {
+      final GoogleSignInAuthentication googleSignInAuthentication =
+      await googleSignInAccount.authentication;
+      final AuthCredential credential = GoogleAuthProvider.credential(
+        accessToken: googleSignInAuthentication.accessToken,
+        idToken: googleSignInAuthentication.idToken,
+      );
+      final UserCredential authResult = await _auth.signInWithCredential(credential);
+      final User? user = authResult.user;
+      return user;
+    }
+  } catch (error) {
+    print(error);
+    return null;
+  }
+}
 
 Future<void> signInWithGoogle(BuildContext context) async {
   GoogleSignIn _googleSignIn = GoogleSignIn();
@@ -44,19 +81,59 @@ class MyHomePage extends StatefulWidget {
 }
 
 class _MyHomePageState extends State<MyHomePage> {
-  int num = 0; // int로 변경
-  List<String> items = List.generate(100, (index) => "물건 $index");
+  List<String> items = List.generate(itemLength, (index) => "물건 $index");
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text (
-          "방구석 경매        $userName",
-          style: TextStyle(
-            color: Colors.white,
-            fontWeight: FontWeight.bold,
-            fontStyle: FontStyle.italic,
-          ),
+        backgroundColor: Colors.green[900],
+          automaticallyImplyLeading: false,
+        title: Row (
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children:[
+            Row(
+              children: [
+                Icon(
+                    Icons.bedtime
+                ),
+                Text(
+                  "방구석 경매",
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.bold,
+                    fontStyle: FontStyle.italic,
+                  ),
+                ),
+              ],
+            ),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.end,
+              children: [
+                Text(
+                  "$userName 님",
+                  style: TextStyle(
+                      color: Colors.green[300],
+                      fontStyle: FontStyle.italic,
+                      fontSize: 14
+                  ),
+                ),
+                IconButton(
+                  alignment: Alignment.center,
+                  icon: Icon(
+                    Icons.logout,
+                    size: 20,
+                  ),
+                  style: ButtonStyle(
+                      iconSize: MaterialStatePropertyAll(1)
+                  ),
+                  onPressed: () {
+                    _handleSignOut(context);
+                  },
+                )
+              ],
+            )
+          ]
         ),
       ),
       body: BodyView(),
@@ -67,7 +144,9 @@ class _MyHomePageState extends State<MyHomePage> {
             onPressed: () {
               setState(() {
                 Screen = 0;
-                num++;
+                itemsLength();
+                print("itemLength 값 : $itemLength");
+                //itemLength++;
               });
             },
             icon: Icon(Icons.card_travel),
@@ -88,7 +167,7 @@ class _MyHomePageState extends State<MyHomePage> {
   Widget BodyView() {
     if (Screen == 0) {
       return ListView.builder(
-        itemCount: num,
+        itemCount: itemLength,
         itemBuilder: (BuildContext context, int index) {
           return InkWell(
             onTap: () {
@@ -150,37 +229,15 @@ class _MyHomePageState extends State<MyHomePage> {
     }
   }
 }
+
 class MyAuthPage extends StatelessWidget {
-  final FirebaseAuth _auth = FirebaseAuth.instance;
-  final GoogleSignIn _googleSignIn = GoogleSignIn();
 
-
-  Future<User?> _handleSignIn(BuildContext context) async {
-    await _auth.signOut();
-    await _googleSignIn.signOut();
-    try {
-      final GoogleSignInAccount? googleSignInAccount = await _googleSignIn.signIn();
-      if (googleSignInAccount != null) {
-        final GoogleSignInAuthentication googleSignInAuthentication =
-        await googleSignInAccount.authentication;
-        final AuthCredential credential = GoogleAuthProvider.credential(
-          accessToken: googleSignInAuthentication.accessToken,
-          idToken: googleSignInAuthentication.idToken,
-        );
-        final UserCredential authResult = await _auth.signInWithCredential(credential);
-        final User? user = authResult.user;
-        return user;
-      }
-    } catch (error) {
-      print(error);
-      return null;
-    }
-  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
+        backgroundColor: Colors.green[900],
         title: Text('로그인 화면'),
       ),
       body: Center(
