@@ -166,46 +166,72 @@ class _MyHomePageState extends State<MyHomePage> {
 
   Widget BodyView() {
     if (Screen == 0) {
-      return ListView.builder(
-        itemCount: itemLength,
-        itemBuilder: (BuildContext context, int index) {
-          return InkWell(
-            onTap: () {
-              setState(() {
-                if (items[index] == "물건 클릭")
-                  items[index] = "물건 $index";
-                else
-                  items[index] = "물건 클릭";
-              });
-            },
-            child: Container(
-              height: 80,
-              decoration: BoxDecoration(
-                border: Border.all(
-                  color: Colors.black,
-                  width: 0.7,
-                ),
-              ),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: ListTile(
-                      titleAlignment: ListTileTitleAlignment.center,
-                      title: Text(items[index]),
+      return Stack( // Stack으로 감싸서 리스트뷰와 버튼 겹치게 배치
+        children: [
+          ListView.builder(
+            itemCount: itemLength,
+            itemBuilder: (BuildContext context, int index) {
+              return InkWell(
+                onTap: () {
+                  setState(() {
+                    if (items[index] == "물건 클릭")
+                      items[index] = "물건 $index";
+                    else
+                      items[index] = "물건 클릭";
+                  });
+                },
+                child: Container(
+                  height: 80,
+                  decoration: BoxDecoration(
+                    border: Border.all(
+                      color: Colors.black,
+                      width: 0.7,
                     ),
                   ),
-                  Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
+                  child: Row(
                     children: [
-                      Text("물건"),
-                      Text("가격"),
+                      Expanded(
+                        child: ListTile(
+                          titleAlignment: ListTileTitleAlignment.center,
+                          title: Text(items[index]),
+                        ),
+                      ),
+                      Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Text("물건"),
+                          Text("가격"),
+                        ],
+                      ),
                     ],
                   ),
-                ],
+                ),
+              );
+            },
+          ),
+          Positioned(
+            bottom: 50, // 아래 여백 조절
+            right: 16, // 오른쪽 여백 조절
+            child: ElevatedButton(
+              onPressed: () {
+                Navigator.of(context).push(
+                    MaterialPageRoute(
+                        builder: (context) => addItem()));
+                print('Button Pressed');
+              },
+              style: ElevatedButton.styleFrom(
+                shape: CircleBorder(), // 원 모양으로 버튼 모양을 변경
+                padding: EdgeInsets.all(16.0), // 버튼 내부 여백 조정
+                primary: Colors.green[900], // 버튼의 배경색 설정
+              ),
+              child: Icon(
+                Icons.add,
+                size: 40, // 아이콘 크기 조정
+                color: Colors.white, // 아이콘 색상 설정
               ),
             ),
-          );
-        },
+          ),
+        ],
       );
     } else {
       return Scaffold(
@@ -227,6 +253,62 @@ class _MyHomePageState extends State<MyHomePage> {
         ),
       );
     }
+  }
+
+}
+class addItem extends StatelessWidget {
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        backgroundColor: Colors.green[900],
+        automaticallyImplyLeading: true,
+        title: Row(
+          children: [
+            Icon(Icons.add_shopping_cart),
+            Text("상품 등록")
+          ],
+        ),
+      ),
+      body: Column(
+        children: [
+          TextField(
+            decoration: InputDecoration(
+              labelText: '상품 명', // 텍스트 필드 위에 나타날 레이블
+              hintText: '상품 명을 입력하세요', // 사용자에게 힌트를 제공할 텍스트
+              border: OutlineInputBorder(), // 텍스트 필드 주위에 테두리를 만듦
+            ),
+            onChanged: (text) {
+              // 텍스트가 변경될 때 호출되는 콜백 함수
+              print('입력된 텍스트: $text');
+            },
+          ),
+          TextField(
+            decoration: InputDecoration(
+              labelText: '가격', // 텍스트 필드 위에 나타날 레이블
+              hintText: '가격을 입력하세요', // 사용자에게 힌트를 제공할 텍스트
+              border: OutlineInputBorder(), // 텍스트 필드 주위에 테두리를 만듦
+            ),
+            onChanged: (text) {
+              // 텍스트가 변경될 때 호출되는 콜백 함수
+              print('입력된 텍스트: $text');
+            },
+          ),
+          TextField(
+            decoration: InputDecoration(
+              labelText: '상품 설명', // 텍스트 필드 위에 나타날 레이블
+              hintText: '상품 설명을 입력하세요', // 사용자에게 힌트를 제공할 텍스트
+              border: OutlineInputBorder(), // 텍스트 필드 주위에 테두리를 만듦
+            ),
+            onChanged: (text) {
+              // 텍스트가 변경될 때 호출되는 콜백 함수
+              print('입력된 텍스트: $text');
+            },
+          )
+        ],
+      ),
+    );
   }
 }
 
