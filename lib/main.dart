@@ -17,9 +17,9 @@ String? userUid = "";
 String? userName = "";
 int itemLength = 0;
 
-Future<int> itemsLength() async {
+Future<int> itemsLength(String trade) async {
   try {
-    final querySnapshot = await FirebaseFirestore.instance.collection('items').get();
+    final querySnapshot = await FirebaseFirestore.instance.collection(trade).get();
 
     final documentCount = querySnapshot.docs.length;
     print('컬렉션 내의 문서 수: $documentCount');
@@ -62,6 +62,7 @@ void main() async {
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
   );
+  itemsLength("allitem");
   runApp(MyApp());
 }
 
@@ -81,8 +82,43 @@ class MyHomePage extends StatefulWidget {
 }
 
 class _MyHomePageState extends State<MyHomePage> {
-  List<String> items = List.generate(itemLength, (index) => "물건 $index");
+  //List<String> items = List.generate(itemLength, (index) => "물건 $index");
+  List<String> items = []; // 아이템 리스트를 저장할 변수
+  List<String> price = [];
+  List<String> detail= [];
+  @override
+  void initState() {
+    super.initState();
+    // initState에서 데이터 가져오기
+    fetchItems();
+    print(fetchItems());
+    print("타이틀 : $items\n가격 : $price\n상세설명 : $detail");
+  }
+  Future<void> fetchItems() async {
+    final itemsList = await getTitle("title");
+    final itemsPrice = await getTitle("price");
+    final itemsDetail = await getTitle("detail");
 
+    setState(() {
+      items = itemsList;
+      price = itemsPrice;
+      detail = itemsDetail;
+    });
+  }
+  Future<List<String>> getTitle(String item) async {
+    List<String> documentsList = [];
+
+    final QuerySnapshot querySnapshot = await FirebaseFirestore.instance.collection("allitem").get();
+
+    if (querySnapshot.docs.isNotEmpty) {
+      for (QueryDocumentSnapshot doc in querySnapshot.docs) {
+        documentsList.add(doc.get(item));
+        print(documentsList);
+      }
+    }
+
+    return documentsList;
+  }
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -144,7 +180,7 @@ class _MyHomePageState extends State<MyHomePage> {
             onPressed: () {
               setState(() {
                 Screen = 0;
-                itemsLength();
+                itemsLength("allitem");
                 print("itemLength 값 : $itemLength");
                 //itemLength++;
               });
@@ -174,10 +210,10 @@ class _MyHomePageState extends State<MyHomePage> {
               return InkWell(
                 onTap: () {
                   setState(() {
-                    if (items[index] == "물건 클릭")
-                      items[index] = "물건 $index";
-                    else
-                      items[index] = "물건 클릭";
+                    // if (items[index] == "물건 클릭")
+                    //   items[index] = "물건 $index";
+                    // else
+                    //   items[index] = "물건 클릭";
                   });
                 },
                 child: Container(
@@ -191,7 +227,7 @@ class _MyHomePageState extends State<MyHomePage> {
                   child: Row(
                     children: [
                       Expanded(
-                        child: ListTile(
+                        child: ListTile (
                           titleAlignment: ListTileTitleAlignment.center,
                           title: Text(items[index]),
                         ),
@@ -199,8 +235,8 @@ class _MyHomePageState extends State<MyHomePage> {
                       Column(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          Text("물건"),
-                          Text("가격"),
+                          Text(detail[index]),
+                          Text(price[index]),
                         ],
                       ),
                     ],
@@ -257,6 +293,9 @@ class _MyHomePageState extends State<MyHomePage> {
 
 }
 class addItem extends StatelessWidget {
+String itemName = "";
+String price = "";
+String detail = "";
 
   @override
   Widget build(BuildContext context) {
@@ -281,6 +320,7 @@ class addItem extends StatelessWidget {
             ),
             onChanged: (text) {
               // 텍스트가 변경될 때 호출되는 콜백 함수
+              itemName = text;
               print('입력된 텍스트: $text');
             },
           ),
@@ -292,6 +332,7 @@ class addItem extends StatelessWidget {
             ),
             onChanged: (text) {
               // 텍스트가 변경될 때 호출되는 콜백 함수
+              price = text;
               print('입력된 텍스트: $text');
             },
           ),
@@ -303,8 +344,20 @@ class addItem extends StatelessWidget {
             ),
             onChanged: (text) {
               // 텍스트가 변경될 때 호출되는 콜백 함수
+              detail = text;
               print('입력된 텍스트: $text');
             },
+          ),
+          ElevatedButton(
+              onPressed:(){
+                itemInfo item = itemInfo(itemName, price, detail);
+                item.itemSet(userUid);
+                Navigator.of(context).push(
+                    MaterialPageRoute(
+                        builder: (context) => MyHomePage()));
+                print("상품 명 : $itemName\n가격 : $price\n상품설명 : $detail\n판매자 정보 : $userUid");
+              },
+              child: Text("등록")
           )
         ],
       ),
@@ -364,7 +417,34 @@ void _handleSignOut(BuildContext context) async {
     print("로그아웃 오류: $e");
   }
 }
+class getData{
+  String? uid = "";
+  
+}
+class itemInfo{
+  String? title;
+  String? price;
+  String? detail;
 
+  itemInfo(this.title, this.price, this.detail);
+
+  void itemSet(String? UID) async{
+    await firestore.collection('allitem').doc(this.title).set({
+      'title' : this.title,
+      'price' : this.price,
+      'detail': this.detail,
+      'uid'   : UID
+    });
+  }
+  void Update(String title, String price, String detail, String docID) async{
+    await firestore.collection('allitem').doc(docID).update({
+      'title': title,
+      'price': price,
+      'detail': detail
+    });
+  }
+
+}
 class Users {
   // 멤버 변수 (인스턴스 변수)
   String? name;
@@ -399,6 +479,17 @@ class Users {
     } else {
       print('Document does not exist');
     }
+  }
+  //UID 비교 함수
+  void getData(String itemKey) async{
+    final UID = await firestore.collection("allitem");
+  }
+  void itemSet(String title, String price, String detail) async{
+    await firestore.collection('allitem').doc(title).set({
+      'title' : title,
+      'price' : price,
+      'detail': detail
+    });
   }
   void Update() async{
     await firestore.collection('users').doc('documentId').update({
