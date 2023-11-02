@@ -3,6 +3,7 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:riverpod/riverpod.dart';
 import 'firebase_options.dart';
@@ -15,7 +16,10 @@ final GoogleSignIn _googleSignIn = GoogleSignIn();
 int Screen = 0;
 String? userUid = "";
 String? userName = "";
+String? userEmail = "";
+int? userCoin = 0;
 int itemLength = 0;
+String addUser = "";
 
 Future<int> itemsLength(String trade) async {
   try {
@@ -122,56 +126,7 @@ class _MyHomePageState extends State<MyHomePage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        backgroundColor: Colors.green[900],
-          automaticallyImplyLeading: false,
-        title: Row (
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children:[
-            Row(
-              children: [
-                Icon(
-                    Icons.bedtime
-                ),
-                Text(
-                  "방구석 경매",
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontWeight: FontWeight.bold,
-                    fontStyle: FontStyle.italic,
-                  ),
-                ),
-              ],
-            ),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.end,
-              children: [
-                Text(
-                  "$userName 님",
-                  style: TextStyle(
-                      color: Colors.green[300],
-                      fontStyle: FontStyle.italic,
-                      fontSize: 14
-                  ),
-                ),
-                IconButton(
-                  alignment: Alignment.center,
-                  icon: Icon(
-                    Icons.logout,
-                    size: 20,
-                  ),
-                  style: ButtonStyle(
-                      iconSize: MaterialStatePropertyAll(1)
-                  ),
-                  onPressed: () {
-                    _handleSignOut(context);
-                  },
-                )
-              ],
-            )
-          ]
-        ),
-      ),
+      appBar: AppView(),
       body: BodyView(),
       bottomNavigationBar: Row(
         mainAxisAlignment: MainAxisAlignment.spaceEvenly,
@@ -182,6 +137,7 @@ class _MyHomePageState extends State<MyHomePage> {
                 Screen = 0;
                 itemsLength("allitem");
                 print("itemLength 값 : $itemLength");
+                print("기존 num = $userCoin");
                 //itemLength++;
               });
             },
@@ -199,6 +155,111 @@ class _MyHomePageState extends State<MyHomePage> {
       ),
     );
   }
+  PreferredSizeWidget AppView() {
+    if (Screen == 0) {
+      return AppBar(
+        backgroundColor: Colors.green[900],
+        automaticallyImplyLeading: false,
+        title: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Row(
+              children: [
+                Icon(
+                  FontAwesomeIcons.legal,
+                ),
+                Text(
+                  "방구석 경매",
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.bold,
+                    fontStyle: FontStyle.italic,
+                  ),
+                ),
+              ],
+            ),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.end,
+              children: [
+                Text(
+                  "$userName 님",
+                  style: TextStyle(
+                    color: Colors.green[300],
+                    fontStyle: FontStyle.italic,
+                    fontSize: 14,
+                  ),
+                ),
+                IconButton(
+                  alignment: Alignment.center,
+                  icon: Icon(
+                    Icons.logout,
+                    size: 20,
+                  ),
+                  style: ButtonStyle(
+                    iconSize: MaterialStateProperty.all(1),
+                  ),
+                  onPressed: () {
+                    _handleSignOut(context);
+                  },
+                ),
+              ],
+            ),
+          ],
+        ),
+      );
+    } else {
+      return AppBar(
+        backgroundColor: Colors.green[900],
+        automaticallyImplyLeading: false,
+        title: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Row(
+              children: [
+                Icon(
+                  FontAwesomeIcons.user,
+                ),
+                Text(
+                  "내 정보",
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.bold,
+                    fontStyle: FontStyle.italic,
+                  ),
+                ),
+              ],
+            ),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.end,
+              children: [
+                Text(
+                  "$userName 님",
+                  style: TextStyle(
+                    color: Colors.green[300],
+                    fontStyle: FontStyle.italic,
+                    fontSize: 14,
+                  ),
+                ),
+                IconButton(
+                  alignment: Alignment.center,
+                  icon: Icon(
+                    Icons.logout,
+                    size: 20,
+                  ),
+                  style: ButtonStyle(
+                    iconSize: MaterialStateProperty.all(1),
+                  ),
+                  onPressed: () {
+                    _handleSignOut(context);
+                  },
+                ),
+              ],
+            ),
+          ],
+        ),
+      );
+    }
+  }
 
   Widget BodyView() {
     if (Screen == 0) {
@@ -210,10 +271,9 @@ class _MyHomePageState extends State<MyHomePage> {
               return InkWell(
                 onTap: () {
                   setState(() {
-                    // if (items[index] == "물건 클릭")
-                    //   items[index] = "물건 $index";
-                    // else
-                    //   items[index] = "물건 클릭";
+                    Navigator.of(context).push(
+                        MaterialPageRoute(
+                            builder: (context) => detailItem(items[index], detail[index], price[index])));
                   });
                 },
                 child: Container(
@@ -233,7 +293,7 @@ class _MyHomePageState extends State<MyHomePage> {
                         ),
                       ),
                       Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
+                        mainAxisAlignment: MainAxisAlignment.end,
                         children: [
                           Text(detail[index]),
                           Text(price[index]),
@@ -273,25 +333,129 @@ class _MyHomePageState extends State<MyHomePage> {
       return Scaffold(
         body: Column(
           children: [
-            Text("내정보 만들거임"),
             Row(
               children: [
-                Text("로그아웃"),
-                IconButton(
-                  icon: Icon(Icons.logout),
-                  onPressed: () {
-                    _handleSignOut(context);
-                  },
+                Container(
+                  alignment: Alignment.center,
+                  width: 120,
+                  height: 120,
+                  color: Colors.grey,
+                  child: Icon(
+                    FontAwesomeIcons.user,
+                    size: 70,
+                  )
+                ),
+                Container(
+                  alignment: Alignment.topLeft,
+                  child: Column(
+                    children: [
+                      Container(
+                        alignment: Alignment.topLeft,
+                        child: Text(
+                          "$userName",
+                          style: TextStyle(
+                              fontStyle: FontStyle.normal,
+                              fontWeight: FontWeight.bold
+                          ),
+                        ),
+                      ),
+                      Container(
+                        alignment: Alignment.topLeft,
+                        child: Text("$userEmail"),
+                      ),
+                      Container(
+                        child: Text("보유 코인 : $userCoin C"),
+                      )
+                    ],
+                  ),
                 )
+
               ],
             )
           ],
-        ),
+        )
       );
     }
   }
 
 }
+class detailItem extends StatelessWidget {
+  String? title;
+  String? detail;
+  String? price;
+  String? uid;
+  TextEditingController bid = TextEditingController();
+
+  detailItem(String? title, String? detail, String? price){
+    this.title = title;
+    this.detail = detail;
+    this.price = price;
+  }
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        backgroundColor: Colors.green[900],
+        title: Row(
+          children: [
+            Icon(Icons.add_shopping_cart),
+            Text(
+                "상품 상세 정보",
+              style: TextStyle(
+                fontStyle: FontStyle.italic
+              ),
+            ),
+          ],
+        )
+      ),
+      body: Column(
+        mainAxisAlignment: MainAxisAlignment.start,
+        children: [
+          Text(
+            "$title",
+            style: TextStyle(
+              fontStyle: FontStyle.italic,
+              fontWeight: FontWeight.bold,
+              fontSize: 50,
+            ),
+          ),
+          Text(
+            "가격 : $price",
+            style: TextStyle(
+              fontStyle: FontStyle.italic,
+              fontSize: 20
+            ),
+          ),
+          Text(
+            "$detail",
+            style: TextStyle(
+              fontStyle: FontStyle.italic,
+              fontWeight: FontWeight.bold,
+              fontSize: 30
+            ),
+          ),
+          // Row(
+          //   children: [
+          //     TextField(
+          //       controller: bid,
+          //       decoration: InputDecoration(
+          //           labelText: '입찰하기', // 텍스트 필드 위에 나타날 레이블
+          //           hintText: '입찰 가격을 입력 하세요', // 사용자에게 힌트를 제공할 텍스트
+          //           border: OutlineInputBorder()
+          //       ),
+          //     ),
+          //     ElevatedButton(onPressed:() async {
+          //
+          //     }, child: Text("등록"))
+          //   ],
+          // )
+        ],
+      ),
+    );
+  }
+}
+
+
 class addItem extends StatelessWidget {
 String itemName = "";
 String price = "";
@@ -384,10 +548,16 @@ class MyAuthPage extends StatelessWidget {
               // 로그인 성공 시 처리
               await _googleSignIn.signOut();
 
-              Users User = Users(user.displayName, user.uid);
-              User.add(user.uid);
+
+              Users User = Users(user.displayName, user.uid, user.email);
+              User.addUser(user.uid);
               userUid = user.uid;
               userName = user.displayName;
+              userEmail = user.email;
+              final userDoc = await firestore.collection("users").doc(userUid).get();
+              userCoin = userDoc.data()?['coin'];
+
+              print("point : $userCoin");
               print('Signed in: ${user.displayName}');
               Navigator.of(context).push(
                   MaterialPageRoute(
@@ -425,6 +595,7 @@ class itemInfo{
   String? title;
   String? price;
   String? detail;
+  String? myInfo;
 
   itemInfo(this.title, this.price, this.detail);
 
@@ -449,11 +620,12 @@ class Users {
   // 멤버 변수 (인스턴스 변수)
   String? name;
   String? Uid;
-
+  String? email;
+  int? coin = userCoin;
   // 생성자
-  Users(this.name, this.Uid);
+  Users(this.name, this.Uid, this.email);
 
-  void add(String user) async{
+  void addUser(String user) async{
     final querySnapshot = await FirebaseFirestore.instance.collection('users').get();
 
     if (querySnapshot.docs.isNotEmpty) {
@@ -464,9 +636,14 @@ class Users {
         if(documentSnapshot.id == userUid) {
           print("이미 가입된 계정 입니다. \nUID : ${documentSnapshot.id}");
         }else {
+          if(coin == null){
+            coin = 0;
+          }
           firestore.collection('users').doc(user).set({
             'name': name,
             'Uid': Uid,
+            'email' : email,
+            'coin' : userCoin
           });
         }
       }
