@@ -149,6 +149,14 @@ class _MyHomePageState extends State<MyHomePage> {
                 Screen = 1;
               });
             },
+            icon: Icon(FontAwesomeIcons.search),
+          ),
+          IconButton(
+            onPressed: () {
+              setState(() {
+                Screen = 2;
+              });
+            },
             icon: Icon(Icons.account_circle),
           ),
         ],
@@ -170,6 +178,58 @@ class _MyHomePageState extends State<MyHomePage> {
                 ),
                 Text(
                   "방구석 경매",
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.bold,
+                    fontStyle: FontStyle.italic,
+                  ),
+                ),
+              ],
+            ),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.end,
+              children: [
+                Text(
+                  "$userName 님",
+                  style: TextStyle(
+                    color: Colors.green[300],
+                    fontStyle: FontStyle.italic,
+                    fontSize: 14,
+                  ),
+                ),
+                IconButton(
+                  alignment: Alignment.center,
+                  icon: Icon(
+                    Icons.logout,
+                    size: 20,
+                  ),
+                  style: ButtonStyle(
+                    iconSize: MaterialStateProperty.all(1),
+                  ),
+                  onPressed: () {
+                    _handleSignOut(context);
+                  },
+                ),
+              ],
+            ),
+          ],
+        ),
+      );
+    }
+    else if(Screen == 1){
+      return AppBar(
+        backgroundColor: Colors.green[900],
+        automaticallyImplyLeading: false,
+        title: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Row(
+              children: [
+                Icon(
+                  FontAwesomeIcons.search,
+                ),
+                Text(
+                  "상품 검색",
                   style: TextStyle(
                     color: Colors.white,
                     fontWeight: FontWeight.bold,
@@ -329,7 +389,22 @@ class _MyHomePageState extends State<MyHomePage> {
           ),
         ],
       );
-    } else {
+    } else if(Screen == 1){
+      return Scaffold(
+        body: Column(
+          children: [
+            TextField(
+                decoration: InputDecoration(
+                labelText: '원하는 상품 명을 입력 하세요', // 텍스트 필드 위에 나타날 레이블
+                hintText: 'EX) 먹태깡 ', // 사용자에게 힌트를 제공할 텍스트
+                border: OutlineInputBorder(), // 텍스트 필드 주위에 테두리를 만듦
+              )
+            )
+          ]
+        )
+      );
+    }
+    else {
       return Scaffold(
         body: Column(
           children: [
@@ -412,7 +487,7 @@ class detailItem extends StatelessWidget {
         mainAxisAlignment: MainAxisAlignment.start,
         children: [
           Text(
-            "$title",
+            "제목 : $title",
             style: TextStyle(
               fontStyle: FontStyle.italic,
               fontWeight: FontWeight.bold,
@@ -427,7 +502,7 @@ class detailItem extends StatelessWidget {
             ),
           ),
           Text(
-            "$detail",
+            "상세설명 : $detail",
             style: TextStyle(
               fontStyle: FontStyle.italic,
               fontWeight: FontWeight.bold,
