@@ -7,6 +7,7 @@ import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:riverpod/riverpod.dart';
 import 'firebase_options.dart';
+import 'package:firebase_storage/firebase_storage.dart';
 
 final FirebaseFirestore firestore = FirebaseFirestore.instance;
 
@@ -90,6 +91,7 @@ class _MyHomePageState extends State<MyHomePage> {
   List<String> items = []; // 아이템 리스트를 저장할 변수
   List<String> price = [];
   List<String> detail= [];
+
   @override
   void initState() {
     super.initState();
@@ -102,12 +104,24 @@ class _MyHomePageState extends State<MyHomePage> {
     final itemsList = await getTitle("title");
     final itemsPrice = await getTitle("price");
     final itemsDetail = await getTitle("detail");
-
     setState(() {
       items = itemsList;
       price = itemsPrice;
       detail = itemsDetail;
     });
+  }
+  Future<void> _refreshMyprofile() async{
+    await Future.delayed(Duration(seconds: 1));
+    setState(() {
+      userCoin;
+    });
+}
+
+  Future<void> _refreshData() async {
+    // 새로고침 시 수행할 작업
+    await Future.delayed(Duration(seconds: 1));
+
+    fetchItems();
   }
   Future<List<String>> getTitle(String item) async {
     List<String> documentsList = [];
@@ -152,8 +166,15 @@ class _MyHomePageState extends State<MyHomePage> {
             icon: Icon(FontAwesomeIcons.search),
           ),
           IconButton(
+            onPressed: (){
+              _refreshData();
+              },
+            icon: Icon(FontAwesomeIcons.refresh),
+          ),
+          IconButton(
             onPressed: () {
               setState(() {
+                _refreshMyprofile();
                 Screen = 2;
               });
             },
@@ -323,72 +344,76 @@ class _MyHomePageState extends State<MyHomePage> {
 
   Widget BodyView() {
     if (Screen == 0) {
-      return Stack( // Stack으로 감싸서 리스트뷰와 버튼 겹치게 배치
-        children: [
-          ListView.builder(
-            itemCount: itemLength,
-            itemBuilder: (BuildContext context, int index) {
-              return InkWell(
-                onTap: () {
-                  setState(() {
-                    Navigator.of(context).push(
-                        MaterialPageRoute(
-                            builder: (context) => detailItem(items[index], detail[index], price[index])));
-                  });
-                },
-                child: Container(
-                  height: 80,
-                  decoration: BoxDecoration(
-                    border: Border.all(
-                      color: Colors.black,
-                      width: 0.7,
+      return RefreshIndicator(
+        onRefresh: _refreshData,
+        child:  Stack( // Stack으로 감싸서 리스트뷰와 버튼 겹치게 배치
+          children: [
+            ListView.builder(
+              itemCount: itemLength,
+              itemBuilder: (BuildContext context, int index) {
+                return InkWell(
+                  onTap: () {
+                    setState(() {
+                      Navigator.of(context).push(
+                          MaterialPageRoute(
+                              builder: (context) => detailItem(items[index], detail[index], price[index])));
+                    });
+                  },
+                  child: Container(
+                    height: 80,
+                    decoration: BoxDecoration(
+                      border: Border.all(
+                        color: Colors.black,
+                        width: 0.7,
+                      ),
+                    ),
+                    child: Row(
+                      children: [
+                        Expanded(
+                          child: ListTile (
+                            titleAlignment: ListTileTitleAlignment.center,
+                            title: Text(items[index]),
+                          ),
+                        ),
+                        Column(
+                          mainAxisAlignment: MainAxisAlignment.end,
+                          children: [
+                            Text(detail[index]),
+                            Text(price[index]),
+                          ],
+                        ),
+                      ],
                     ),
                   ),
-                  child: Row(
-                    children: [
-                      Expanded(
-                        child: ListTile (
-                          titleAlignment: ListTileTitleAlignment.center,
-                          title: Text(items[index]),
-                        ),
-                      ),
-                      Column(
-                        mainAxisAlignment: MainAxisAlignment.end,
-                        children: [
-                          Text(detail[index]),
-                          Text(price[index]),
-                        ],
-                      ),
-                    ],
-                  ),
-                ),
-              );
-            },
-          ),
-          Positioned(
-            bottom: 50, // 아래 여백 조절
-            right: 16, // 오른쪽 여백 조절
-            child: ElevatedButton(
-              onPressed: () {
-                Navigator.of(context).push(
-                    MaterialPageRoute(
-                        builder: (context) => addItem()));
-                print('Button Pressed');
+                );
               },
-              style: ElevatedButton.styleFrom(
-                shape: CircleBorder(), // 원 모양으로 버튼 모양을 변경
-                padding: EdgeInsets.all(16.0), // 버튼 내부 여백 조정
-                primary: Colors.green[900], // 버튼의 배경색 설정
-              ),
-              child: Icon(
-                Icons.add,
-                size: 40, // 아이콘 크기 조정
-                color: Colors.white, // 아이콘 색상 설정
+            ),
+            Positioned(
+              bottom: 50, // 아래 여백 조절
+              right: 16, // 오른쪽 여백 조절
+              child: ElevatedButton(
+                onPressed: () {
+                  Navigator.of(context).push(
+                      MaterialPageRoute(
+                          builder: (context) => addItem()));
+                  print('Button Pressed');
+                },
+                style: ElevatedButton.styleFrom(
+                  shape: CircleBorder(), // 원 모양으로 버튼 모양을 변경
+                  padding: EdgeInsets.all(16.0), // 버튼 내부 여백 조정
+                  primary: Colors.green[900], // 버튼의 배경색 설정
+                ),
+                child: Icon(
+                  Icons.add,
+                  size: 40, // 아이콘 크기 조정
+                  color: Colors.white, // 아이콘 색상 설정
+                ),
               ),
             ),
-          ),
-        ],
+          ],
+        )
       );
+
     } else if(Screen == 1){
       return Scaffold(
         body: Column(
@@ -483,49 +508,230 @@ class detailItem extends StatelessWidget {
           ],
         )
       ),
-      body: Column(
-        mainAxisAlignment: MainAxisAlignment.start,
-        children: [
-          Text(
-            "제목 : $title",
-            style: TextStyle(
-              fontStyle: FontStyle.italic,
-              fontWeight: FontWeight.bold,
-              fontSize: 50,
+      body: Container(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Container(
+              margin: EdgeInsets.all(0.0),
+              child: Text(
+                "제목 : $title",
+                style: TextStyle(
+                  fontStyle: FontStyle.italic,
+                  fontWeight: FontWeight.bold,
+                  fontSize: 20,
+                ),
+                textAlign: TextAlign.left,
+              ),
             ),
-          ),
-          Text(
-            "가격 : $price",
-            style: TextStyle(
-              fontStyle: FontStyle.italic,
-              fontSize: 20
+            Container(
+              child: Text(
+                "가격 : $price",
+                style: TextStyle(
+                  fontStyle: FontStyle.italic,
+                  fontSize: 20,
+                ),
+              ),
             ),
-          ),
-          Text(
-            "상세설명 : $detail",
-            style: TextStyle(
-              fontStyle: FontStyle.italic,
-              fontWeight: FontWeight.bold,
-              fontSize: 30
+            Container(
+              child: Text(
+                "상세설명 : $detail",
+                style: TextStyle(
+                  fontStyle: FontStyle.italic,
+                  fontWeight: FontWeight.bold,
+                  fontSize: 30,
+                ),
+              ),
             ),
-          ),
-          // Row(
-          //   children: [
-          //     TextField(
-          //       controller: bid,
-          //       decoration: InputDecoration(
-          //           labelText: '입찰하기', // 텍스트 필드 위에 나타날 레이블
-          //           hintText: '입찰 가격을 입력 하세요', // 사용자에게 힌트를 제공할 텍스트
-          //           border: OutlineInputBorder()
-          //       ),
-          //     ),
-          //     ElevatedButton(onPressed:() async {
-          //
-          //     }, child: Text("등록"))
-          //   ],
-          // )
-        ],
-      ),
+            Row(
+              children: [
+                Container(
+                  width: 200, // 원하는 너비 설정
+                  child: TextField(
+                    controller: bid,
+                    keyboardType: TextInputType.number,
+                    decoration: InputDecoration(
+                      labelText: '입찰하기',
+                      hintText: '입찰 가격을 입력하세요',
+                      border: OutlineInputBorder(),
+                    ),
+                  ),
+                ),
+                ElevatedButton(
+                  style: ButtonStyle(
+
+                  ),
+                  onPressed: () async {
+                    // 버튼이 눌렸을 때 수행할 작업을 추가하세요.
+                    int num1 = int.tryParse(price ?? "") ?? 0;
+                    int num2 = int.parse(bid.text);
+                    int num3 = userCoin ?? 0;
+                    if(num1 > num2 || num3 < num2){
+                      if(num1 > num2){
+                        showDialog(
+                          context: context,
+                          builder: (BuildContext context) {
+                            return AlertDialog(
+                              title: Row(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Icon(
+                                    FontAwesomeIcons.warning,
+                                    color: Colors.deepOrange,
+                                  ),
+                                  Text(
+                                    '입력 금액이 현재 입찰가 보다 적습니다!',
+                                    style: TextStyle(
+                                      fontSize: 13.3,
+                                      fontWeight: FontWeight.bold
+                                    ),
+                                  ),
+                                  Icon(
+                                      FontAwesomeIcons.warning,
+                                    color: Colors.deepOrange,
+                                  )
+                                ],
+                              ),
+                              content: Row(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Icon(
+                                    FontAwesomeIcons.warning,
+                                    color: Colors.deepOrange,
+                                    size: 15,
+                                  ),
+                                  Text(
+                                    '현재 입찰가 보다 높은 금액을 입력 해주세요!',
+                                    style: TextStyle(
+                                      fontSize: 11.5,
+                                      fontWeight: FontWeight.bold
+                                    ),
+                                  ),
+                                  Icon(
+                                    FontAwesomeIcons.warning,
+                                    color: Colors.deepOrange,
+                                    size: 15,
+                                  )
+                                ],
+                              ),
+                              actions: [
+                                TextButton(
+                                  onPressed: () {
+                                    // 팝업 창 닫기
+                                    Navigator.of(context).pop();
+                                  },
+                                  child: Text('닫기'),
+                                ),
+                              ],
+                            );
+                          },
+                        );
+                      } else if( num3 < num2){
+                        showDialog(
+                          context: context,
+                          builder: (BuildContext context) {
+                            return AlertDialog(
+                              title: Row(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Icon(
+                                    FontAwesomeIcons.warning,
+                                    color: Colors.deepOrange,
+                                    size: 20,
+                                  ),
+                                  Text(
+                                    '금액을 충전해주세요!',
+                                    style: TextStyle(
+                                      fontSize: 15,
+                                      fontWeight: FontWeight.bold
+                                    ),
+                                  ),
+                                  Icon(
+                                    FontAwesomeIcons.warning,
+                                    color: Colors.deepOrange,
+                                    size: 20,
+                                  )
+                                ],
+                              ),
+                              content: Row(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Icon(
+                                    FontAwesomeIcons.warning,
+                                    color: Colors.deepOrange,
+                                    size: 15,
+                                  ),
+                                  Text(
+                                    '보유하고 있는 금액이 입찰하려는 금액보다 적습니다!',
+                                    style: TextStyle(
+                                        fontSize: 10,
+                                        fontWeight: FontWeight.bold
+                                    ),
+                                  ),
+                                  Icon(
+                                    FontAwesomeIcons.warning,
+                                    color: Colors.deepOrange,
+                                    size: 15,
+                                  ),
+                                ],
+                              ),
+                              actions: [
+                                TextButton(
+                                  onPressed: () {
+                                    // 팝업 창 닫기
+                                    Navigator.of(context).pop();
+                                  },
+                                  child: Text('닫기'),
+                                ),
+                              ],
+                            );
+                          },
+                        );
+                      }
+                      // Navigator.pop(context);
+                    }else{
+                      userCoin = (userCoin ?? 0) - int.parse(bid.text);
+
+                      firestore.collection("users").doc(userUid).update({
+                        'coin' : userCoin
+                      });
+                      firestore.collection("allitem").doc(title).update({
+                        'price' : bid.text
+                      });
+                      Navigator.pop(context, true);
+                    }
+                  },
+                  child: Text("등록"),
+                ),
+              ],
+            ),
+          ],
+        ),
+      )
+
+      // bottomNavigationBar: Row(
+      //   children: [
+      //     TextField(
+      //       // controller: bid,
+      //         decoration: InputDecoration(
+      //           labelText: "입찰을 원하시면 입찰 가격을 입력하세요.",
+      //           hintText: "현재입찰가 보다 높아야 합니다.",
+      //           border: OutlineInputBorder()
+      //         ),
+      //     ),
+      //     ElevatedButton(onPressed: () async {
+      //
+      //     },
+      //     child: Text(
+      //       "등록",
+      //       style: TextStyle(
+      //         fontStyle: FontStyle.italic,
+      //         fontSize: 20
+      //       ),
+      //       ),
+      //     )
+      //   ],
+      // ),
     );
   }
 }
