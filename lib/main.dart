@@ -67,7 +67,6 @@ void main() async {
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
   );
-  itemsLength("allitem");
   runApp(MyApp());
 }
 
@@ -104,6 +103,7 @@ class _MyHomePageState extends State<MyHomePage> {
     final itemsList = await getTitle("title");
     final itemsPrice = await getTitle("price");
     final itemsDetail = await getTitle("detail");
+    itemsLength("allitem");
     setState(() {
       items = itemsList;
       price = itemsPrice;
