@@ -13,7 +13,7 @@ final FirebaseFirestore firestore = FirebaseFirestore.instance;
 
 final FirebaseAuth _auth = FirebaseAuth.instance;
 final GoogleSignIn _googleSignIn = GoogleSignIn();
-
+List<dynamic> timeStamps = [];
 int Screen = 0;
 String? userUid = "";
 String? userName = "";
@@ -80,10 +80,12 @@ class MyApp extends StatelessWidget {
   }
 }
 
+
 class MyHomePage extends StatefulWidget {
   @override
   _MyHomePageState createState() => _MyHomePageState();
 }
+
 
 class _MyHomePageState extends State<MyHomePage> {
   //List<String> items = List.generate(itemLength, (index) => "물건 $index");
@@ -116,7 +118,6 @@ class _MyHomePageState extends State<MyHomePage> {
       userCoin;
     });
 }
-
   Future<void> _refreshData() async {
     // 새로고침 시 수행할 작업
     await Future.delayed(Duration(seconds: 1));
@@ -125,8 +126,8 @@ class _MyHomePageState extends State<MyHomePage> {
   }
   Future<List<String>> getTitle(String item) async {
     List<String> documentsList = [];
-
-    final QuerySnapshot querySnapshot = await FirebaseFirestore.instance.collection("allitem").get();
+    final db = firestore.collection("allitem").orderBy("timestamp", descending: true);
+    final QuerySnapshot querySnapshot = await db.get();
 
     if (querySnapshot.docs.isNotEmpty) {
       for (QueryDocumentSnapshot doc in querySnapshot.docs) {
@@ -198,7 +199,7 @@ class _MyHomePageState extends State<MyHomePage> {
                   FontAwesomeIcons.legal,
                 ),
                 Text(
-                  "방구석 경매",
+                  "  방구석 경매",
                   style: TextStyle(
                     color: Colors.white,
                     fontWeight: FontWeight.bold,
@@ -250,7 +251,7 @@ class _MyHomePageState extends State<MyHomePage> {
                   FontAwesomeIcons.search,
                 ),
                 Text(
-                  "상품 검색",
+                  "  상품 검색",
                   style: TextStyle(
                     color: Colors.white,
                     fontWeight: FontWeight.bold,
@@ -301,7 +302,7 @@ class _MyHomePageState extends State<MyHomePage> {
                   FontAwesomeIcons.user,
                 ),
                 Text(
-                  "내 정보",
+                  "  내 정보",
                   style: TextStyle(
                     color: Colors.white,
                     fontWeight: FontWeight.bold,
@@ -372,14 +373,32 @@ class _MyHomePageState extends State<MyHomePage> {
                         Expanded(
                           child: ListTile (
                             titleAlignment: ListTileTitleAlignment.center,
-                            title: Text(items[index]),
+                            title: Text(items[index],
+                              style: TextStyle(
+                                fontWeight: FontWeight.w900,
+                                fontSize: 25
+                              ),
+                            ),
                           ),
                         ),
                         Column(
-                          mainAxisAlignment: MainAxisAlignment.end,
+                          crossAxisAlignment: CrossAxisAlignment.end,
+                          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                           children: [
-                            Text(detail[index]),
-                            Text(price[index]),
+                            Text(
+                              "현재 입찰가",
+                              style: TextStyle(
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),//detail[index]),
+                            Text(
+                              price[index] + " 원",
+                              style: TextStyle(
+                                color: Colors.red,
+                                fontWeight: FontWeight.bold,
+                                fontSize: 20
+                              ),
+                            ),
                           ],
                         ),
                       ],
@@ -448,6 +467,7 @@ class _MyHomePageState extends State<MyHomePage> {
                 Container(
                   alignment: Alignment.topLeft,
                   child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Container(
                         alignment: Alignment.topLeft,
@@ -469,7 +489,6 @@ class _MyHomePageState extends State<MyHomePage> {
                     ],
                   ),
                 )
-
               ],
             )
           ],
@@ -696,13 +715,29 @@ class detailItem extends StatelessWidget {
                         'coin' : userCoin
                       });
                       firestore.collection("allitem").doc(title).update({
-                        'price' : bid.text
+                        'price' : bid.text,
+                        'customeruid' : userUid,
+                        'customername': userName,
+                        'auctionhistory' : Timestamp.now(),
+                      });
+                      timeStamps.add(Timestamp.now());
+                      firestore.collection('allitem').doc(title).collection('history').doc('history').update({
+                        'historytime' : timeStamps,
                       });
                       Navigator.pop(context, true);
                     }
                   },
                   child: Text("등록"),
                 ),
+                ElevatedButton(
+                    onPressed: (){
+                      Navigator.of(context).push(
+                          MaterialPageRoute(
+                              builder: (context) => auctionHistory(title)));
+                  },
+                    child: Text(
+                      "입찰 기록"
+                    ))
               ],
             ),
           ],
@@ -735,8 +770,6 @@ class detailItem extends StatelessWidget {
     );
   }
 }
-
-
 class addItem extends StatelessWidget {
 String itemName = "";
 String price = "";
@@ -809,6 +842,53 @@ String detail = "";
     );
   }
 }
+class auctionHistory extends StatelessWidget {
+  final String? title;
+
+  auctionHistory({this.title});
+
+  Future<List<dynamic>> getItem() async {
+    DocumentSnapshot historyDoc = await firestore.collection('allitem').doc(this.title).collection('history').doc('history').get();
+    Map<String, dynamic>? data = historyDoc.data() as Map<String, dynamic>?;
+    return data?['historytime'] ?? [];
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: Row(
+          children: [
+            Icon(FontAwesomeIcons.history),
+            Text("입찰 기록"),
+          ],
+        ),
+      ),
+      body: FutureBuilder<List<dynamic>>(
+        future: getItem(),
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return CircularProgressIndicator();
+          } else if (snapshot.hasError) {
+            return Text('Error: ${snapshot.error}');
+          } else {
+            List<dynamic> history = snapshot.data ?? [];
+
+            return ListView.builder(
+              itemCount: history.length,
+              itemBuilder: (context, index) {
+                return ListTile(
+                  title: Text('${history[index]}'),
+                );
+              },
+            );
+          }
+        },
+      ),
+    );
+  }
+}
+
 
 class MyAuthPage extends StatelessWidget {
 
@@ -854,6 +934,7 @@ class MyAuthPage extends StatelessWidget {
     );
   }
 }
+
 void _handleSignOut(BuildContext context) async {
   final FirebaseAuth _auth = FirebaseAuth.instance;
   try {
@@ -868,10 +949,7 @@ void _handleSignOut(BuildContext context) async {
     print("로그아웃 오류: $e");
   }
 }
-class getData{
-  String? uid = "";
-  
-}
+
 class itemInfo{
   String? title;
   String? price;
@@ -881,12 +959,29 @@ class itemInfo{
   itemInfo(this.title, this.price, this.detail);
 
   void itemSet(String? UID) async{
+    DocumentSnapshot historyDoc = await firestore.collection('allitem').doc(this.title).collection('history').doc('timestamp').get();
+
+    Map<String, dynamic>? data = historyDoc.data() as Map<String, dynamic>?;
+
+    if(data == null){
+      timeStamps.add(Timestamp.now());
+    }else{
+      timeStamps = data['timestamp'];
+      timeStamps.add(Timestamp.now());
+    }
+
     await firestore.collection('allitem').doc(this.title).set({
       'title' : this.title,
       'price' : this.price,
       'detail': this.detail,
-      'uid'   : UID
+      'uid'   : UID,
+      'addname': userName,
+      'customeruid' : "",
+      'customername': "",
+      'timestamp' : Timestamp.now(),
+      'auctionhistory' : Timestamp.now(),
     });
+    await firestore.collection('allitem').doc(this.title).collection('history').doc('history').set({'historytime' : timeStamps});
   }
   void Update(String title, String price, String detail, String docID) async{
     await firestore.collection('allitem').doc(docID).update({
@@ -924,7 +1019,8 @@ class Users {
             'name': name,
             'Uid': Uid,
             'email' : email,
-            'coin' : userCoin
+            'coin' : userCoin,
+            'timestamp' : Timestamp.now(),
           });
         }
       }
