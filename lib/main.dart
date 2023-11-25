@@ -88,8 +88,7 @@ class MyHomePage extends StatefulWidget {
 
 
 class _MyHomePageState extends State<MyHomePage> {
-  //List<String> items = List.generate(itemLength, (index) => "물건 $index");
-  List<String> items = []; // 아이템 리스트를 저장할 변수
+  List<String> items = [];
   List<String> price = [];
   List<String> detail= [];
 
@@ -153,7 +152,6 @@ class _MyHomePageState extends State<MyHomePage> {
                 itemsLength("allitem");
                 print("itemLength 값 : $itemLength");
                 print("기존 num = $userCoin");
-                //itemLength++;
               });
             },
             icon: Icon(Icons.card_travel),
@@ -390,7 +388,7 @@ class _MyHomePageState extends State<MyHomePage> {
                               style: TextStyle(
                                 fontWeight: FontWeight.bold,
                               ),
-                            ),//detail[index]),
+                            ),
                             Text(
                               price[index] + " 원",
                               style: TextStyle(
@@ -424,8 +422,8 @@ class _MyHomePageState extends State<MyHomePage> {
                 ),
                 child: Icon(
                   Icons.add,
-                  size: 40, // 아이콘 크기 조정
-                  color: Colors.white, // 아이콘 색상 설정
+                  size: 40,
+                  color: Colors.white,
                 ),
               ),
             ),
@@ -565,7 +563,7 @@ class detailItem extends StatelessWidget {
             Row(
               children: [
                 Container(
-                  width: 200, // 원하는 너비 설정
+                  width: 200,
                   child: TextField(
                     controller: bid,
                     keyboardType: TextInputType.number,
@@ -581,7 +579,6 @@ class detailItem extends StatelessWidget {
 
                   ),
                   onPressed: () async {
-                    // 버튼이 눌렸을 때 수행할 작업을 추가하세요.
                     int num1 = int.tryParse(price ?? "") ?? 0;
                     int num2 = int.parse(bid.text);
                     int num3 = userCoin ?? 0;
@@ -743,30 +740,6 @@ class detailItem extends StatelessWidget {
           ],
         ),
       )
-
-      // bottomNavigationBar: Row(
-      //   children: [
-      //     TextField(
-      //       // controller: bid,
-      //         decoration: InputDecoration(
-      //           labelText: "입찰을 원하시면 입찰 가격을 입력하세요.",
-      //           hintText: "현재입찰가 보다 높아야 합니다.",
-      //           border: OutlineInputBorder()
-      //         ),
-      //     ),
-      //     ElevatedButton(onPressed: () async {
-      //
-      //     },
-      //     child: Text(
-      //       "등록",
-      //       style: TextStyle(
-      //         fontStyle: FontStyle.italic,
-      //         fontSize: 20
-      //       ),
-      //       ),
-      //     )
-      //   ],
-      // ),
     );
   }
 }
@@ -843,12 +816,14 @@ String detail = "";
   }
 }
 class auctionHistory extends StatelessWidget {
-  final String? title;
+  String? title;
 
-  auctionHistory({this.title});
+  auctionHistory(String? title){
+    this.title = title;
+  }
 
   Future<List<dynamic>> getItem() async {
-    DocumentSnapshot historyDoc = await firestore.collection('allitem').doc(this.title).collection('history').doc('history').get();
+    DocumentSnapshot historyDoc = await firestore.collection('allitem').doc(title).collection('history').doc('history').get();
     Map<String, dynamic>? data = historyDoc.data() as Map<String, dynamic>?;
     return data?['historytime'] ?? [];
   }
@@ -857,10 +832,11 @@ class auctionHistory extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
+        backgroundColor: Colors.green[900],
         title: Row(
           children: [
             Icon(FontAwesomeIcons.history),
-            Text("입찰 기록"),
+            Text(" 입찰 기록"),
           ],
         ),
       ),
@@ -873,12 +849,45 @@ class auctionHistory extends StatelessWidget {
             return Text('Error: ${snapshot.error}');
           } else {
             List<dynamic> history = snapshot.data ?? [];
+            for(int i = 0; i <= history.length-1; i++){
+              //DateTime dateTime = history[i].toDate();
+              history[i] = history[i].toDate().toString().substring(0,19);
+            }
 
             return ListView.builder(
               itemCount: history.length,
               itemBuilder: (context, index) {
                 return ListTile(
-                  title: Text('${history[index]}'),
+
+                  title: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Text('',
+                            style: TextStyle(
+                              color: Colors.red,
+                              fontSize: 20,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          Text('입찰시간',
+                            style: TextStyle(
+                              fontSize: 20,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ],
+                      ),
+
+                      Text('${history[index]}',
+                        style: TextStyle(
+                          fontSize: 20,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      )
+                    ],
+                  ),
                 );
               },
             );
@@ -993,7 +1002,6 @@ class itemInfo{
 
 }
 class Users {
-  // 멤버 변수 (인스턴스 변수)
   String? name;
   String? Uid;
   String? email;
