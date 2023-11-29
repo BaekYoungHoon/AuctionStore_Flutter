@@ -5,15 +5,17 @@ import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:google_sign_in/google_sign_in.dart';
-import 'package:riverpod/riverpod.dart';
+//import 'package:riverpod/riverpod.dart';
 import 'firebase_options.dart';
 import 'package:firebase_storage/firebase_storage.dart';
+import 'package:provider/provider.dart';
 
 final FirebaseFirestore firestore = FirebaseFirestore.instance;
 
 final FirebaseAuth _auth = FirebaseAuth.instance;
 final GoogleSignIn _googleSignIn = GoogleSignIn();
 List<dynamic> timeStamps = [];
+List<dynamic> priceHistory = [];
 int Screen = 0;
 String? userUid = "";
 String? userName = "";
@@ -67,7 +69,12 @@ void main() async {
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
   );
-  runApp(MyApp());
+  runApp(
+    ChangeNotifierProvider(
+      create: (context) => MyModel(),
+      child: MyApp(),
+    ),
+  );
 }
 
 
@@ -80,6 +87,62 @@ class MyApp extends StatelessWidget {
   }
 }
 
+class MyModel with ChangeNotifier {
+  List<String> items = [];
+  List<String> price = [];
+  List<String> detail = [];
+
+  Future<int> coinGet() async{
+    DocumentSnapshot historyDoc = await firestore.collection('users').doc(userUid).get();
+    Map<int, dynamic>? data = historyDoc.data() as Map<int, dynamic>?;
+    return data?['coin'] ?? 0;
+  }
+
+  Future<int> itemsLength(String trade) async {
+    try {
+      final querySnapshot = await FirebaseFirestore.instance.collection(trade).get();
+
+      final documentCount = querySnapshot.docs.length;
+      print('컬렉션 내의 문서 수: $documentCount');
+      return itemLength = documentCount;
+    } catch (e) {
+      print('문서 수 확인 오류: $e');
+      return 0;
+    }
+  }
+
+  Future<void> fetchItems() async {
+    final itemsList = await getTitle("title");
+    final itemsPrice = await getTitle("price");
+    final itemsDetail = await getTitle("detail");
+    itemsLength("allitem");
+  }
+
+  Future<void> _refreshData() async {
+    // 새로고침 시 수행할 작업
+    await Future.delayed(Duration(seconds: 1));
+
+    fetchItems();
+  }
+  Future<List<String>> getTitle(String item) async {
+    List<String> documentsList = [];
+    final db = firestore.collection("allitem").orderBy("timestamp", descending: true);
+    final QuerySnapshot querySnapshot = await db.get();
+
+    if (querySnapshot.docs.isNotEmpty) {
+      for (QueryDocumentSnapshot doc in querySnapshot.docs) {
+        documentsList.add(doc.get(item));
+        print(documentsList);
+      }
+    }
+
+    return documentsList;
+  }
+  String userName = "";
+  String userEmail = "";
+
+// 필요한 경우 다른 메서드나 속성을 추가하세요.
+}
 
 class MyHomePage extends StatefulWidget {
   @override
@@ -139,6 +202,7 @@ class _MyHomePageState extends State<MyHomePage> {
   }
   @override
   Widget build(BuildContext context) {
+    final myModel = Provider.of<MyModel>(context);
     return Scaffold(
       appBar: AppView(),
       body: BodyView(),
@@ -482,7 +546,7 @@ class _MyHomePageState extends State<MyHomePage> {
                         child: Text("$userEmail"),
                       ),
                       Container(
-                        child: Text("보유 코인 : $userCoin C"),
+                        child: Text("보유 코인 : ${userCoin} C"),
                       )
                     ],
                   ),
@@ -647,7 +711,7 @@ class detailItem extends StatelessWidget {
                           context: context,
                           builder: (BuildContext context) {
                             return AlertDialog(
-                              title: Row(
+                              title: const Row(
                                 mainAxisAlignment: MainAxisAlignment.center,
                                 children: [
                                   Icon(
@@ -706,7 +770,8 @@ class detailItem extends StatelessWidget {
                       }
                       // Navigator.pop(context);
                     }else{
-                      userCoin = (userCoin ?? 0) - int.parse(bid.text);
+                      DocumentSnapshot dt = await firestore.collection('allitem').doc(title).collection('history').doc('history').get();
+                      Map<String, dynamic>? ts = dt.data() as Map<String, dynamic>?;
 
                       firestore.collection("users").doc(userUid).update({
                         'coin' : userCoin
@@ -717,10 +782,16 @@ class detailItem extends StatelessWidget {
                         'customername': userName,
                         'auctionhistory' : Timestamp.now(),
                       });
+                      priceHistory = ts?['pricehistory'] ?? [];
+                      timeStamps = ts?['historytime'] ?? [];
+                      priceHistory.add(bid.text);
                       timeStamps.add(Timestamp.now());
                       firestore.collection('allitem').doc(title).collection('history').doc('history').update({
                         'historytime' : timeStamps,
+                        'pricehistory' : priceHistory,
                       });
+                      priceHistory = [];
+                      timeStamps = [];
                       Navigator.pop(context, true);
                     }
                   },
@@ -744,10 +815,10 @@ class detailItem extends StatelessWidget {
   }
 }
 class addItem extends StatelessWidget {
-String itemName = "";
-String price = "";
-String detail = "";
-
+  String itemName = "";
+  String price = "";
+  String detail = "";
+  TextEditingController bid = TextEditingController();
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -776,6 +847,7 @@ String detail = "";
             },
           ),
           TextField(
+            keyboardType: TextInputType.number,
             decoration: InputDecoration(
               labelText: '가격', // 텍스트 필드 위에 나타날 레이블
               hintText: '가격을 입력하세요', // 사용자에게 힌트를 제공할 텍스트
@@ -799,9 +871,18 @@ String detail = "";
               print('입력된 텍스트: $text');
             },
           ),
+          TextField(
+            controller: bid,
+            keyboardType: TextInputType.number, // 숫자패드
+            decoration: InputDecoration(
+              labelText: '입찰종료 날짜', // 텍스트 필드 위에 나타날 레이블
+              hintText: '입찰장료 날짜를 입력하세요.', // 사용자에게 힌트를 제공할 텍스트
+              border: OutlineInputBorder(), // 텍스트 필드 주위에 테두리를 만듦
+            ),
+          ),
           ElevatedButton(
               onPressed:(){
-                itemInfo item = itemInfo(itemName, price, detail);
+                itemInfo item = itemInfo(itemName, price, detail, int.parse(bid.text.toString()));
                 item.itemSet(userUid);
                 Navigator.of(context).push(
                     MaterialPageRoute(
@@ -823,9 +904,22 @@ class auctionHistory extends StatelessWidget {
   }
 
   Future<List<dynamic>> getItem() async {
-    DocumentSnapshot historyDoc = await firestore.collection('allitem').doc(title).collection('history').doc('history').get();
+    DocumentSnapshot historyDoc = await firestore.collection('allitem')
+        .doc(title)
+        .collection('history')
+        .doc('history')
+        .get();
     Map<String, dynamic>? data = historyDoc.data() as Map<String, dynamic>?;
     return data?['historytime'] ?? [];
+  }
+  Future<List<dynamic>> getPrice() async {
+    DocumentSnapshot dt = await firestore.collection('allitem')
+        .doc(title)
+        .collection('history')
+        .doc('history')
+        .get();
+    Map<String, dynamic>? data = dt.data() as Map<String, dynamic>?;
+    return data?['pricehistory'] ?? [];
   }
 
   @override
@@ -879,13 +973,26 @@ class auctionHistory extends StatelessWidget {
                           ),
                         ],
                       ),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text('${history[index]}',
+                            style: TextStyle(
+                              fontSize: 20,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          Text('${priceHistory[index]}',
+                            style: TextStyle(
+                              fontSize: 20,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.red
+                            ),
+                          )
+                        ],
+                      ),
 
-                      Text('${history[index]}',
-                        style: TextStyle(
-                          fontSize: 20,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      )
                     ],
                   ),
                 );
@@ -964,8 +1071,15 @@ class itemInfo{
   String? price;
   String? detail;
   String? myInfo;
+  int date;
 
-  itemInfo(this.title, this.price, this.detail);
+  itemInfo(this.title, this.price, this.detail, this.date);
+  
+  Timestamp endAuction(Timestamp time, int after){
+    DateTime currentTimeStamp = time.toDate();
+    DateTime tenDaysLater = currentTimeStamp.add(Duration(days: after));
+    return Timestamp.fromDate(tenDaysLater);
+  }
 
   void itemSet(String? UID) async{
     DocumentSnapshot historyDoc = await firestore.collection('allitem').doc(this.title).collection('history').doc('timestamp').get();
@@ -974,6 +1088,7 @@ class itemInfo{
 
     if(data == null){
       timeStamps.add(Timestamp.now());
+      priceHistory.add(this.price);
     }else{
       timeStamps = data['timestamp'];
       timeStamps.add(Timestamp.now());
@@ -988,9 +1103,17 @@ class itemInfo{
       'customeruid' : "",
       'customername': "",
       'timestamp' : Timestamp.now(),
+      'endauction' : endAuction(Timestamp.now(), this.date),
       'auctionhistory' : Timestamp.now(),
+      'endprice' : this.price,
     });
-    await firestore.collection('allitem').doc(this.title).collection('history').doc('history').set({'historytime' : timeStamps});
+    await firestore.collection('allitem')
+        .doc(this.title).collection('history')
+        .doc('history')
+        .set({
+      'historytime' : timeStamps,
+      'pricehistory' : priceHistory
+        });
   }
   void Update(String title, String price, String detail, String docID) async{
     await firestore.collection('allitem').doc(docID).update({
@@ -1006,14 +1129,13 @@ class Users {
   String? Uid;
   String? email;
   int? coin = userCoin;
-  // 생성자
+
   Users(this.name, this.Uid, this.email);
 
   void addUser(String user) async{
     final querySnapshot = await FirebaseFirestore.instance.collection('users').get();
 
     if (querySnapshot.docs.isNotEmpty) {
-      // 컬렉션에 문서가 존재하면 각 문서의 데이터를 출력합니다.
       for (final documentSnapshot in querySnapshot.docs) {
         final data = documentSnapshot.data() as Map<String, dynamic>;
         print('사용자 데이터: $data');
