@@ -12,6 +12,9 @@ import 'package:provider/provider.dart';
 
 final FirebaseFirestore firestore = FirebaseFirestore.instance;
 
+Color appbarColor = Colors.lightGreen.shade200;
+Color wordColor = Colors.green.shade900;
+
 final FirebaseAuth _auth = FirebaseAuth.instance;
 final GoogleSignIn _googleSignIn = GoogleSignIn();
 List<dynamic> timeStamps = [];
@@ -88,60 +91,17 @@ class MyApp extends StatelessWidget {
 }
 
 class MyModel with ChangeNotifier {
-  List<String> items = [];
-  List<String> price = [];
-  List<String> detail = [];
+
+  Future<bool> tradeComplete() async{
+
+    return true;
+  }
 
   Future<int> coinGet() async{
     DocumentSnapshot historyDoc = await firestore.collection('users').doc(userUid).get();
     Map<int, dynamic>? data = historyDoc.data() as Map<int, dynamic>?;
     return data?['coin'] ?? 0;
   }
-
-  Future<int> itemsLength(String trade) async {
-    try {
-      final querySnapshot = await FirebaseFirestore.instance.collection(trade).get();
-
-      final documentCount = querySnapshot.docs.length;
-      print('컬렉션 내의 문서 수: $documentCount');
-      return itemLength = documentCount;
-    } catch (e) {
-      print('문서 수 확인 오류: $e');
-      return 0;
-    }
-  }
-
-  Future<void> fetchItems() async {
-    final itemsList = await getTitle("title");
-    final itemsPrice = await getTitle("price");
-    final itemsDetail = await getTitle("detail");
-    itemsLength("allitem");
-  }
-
-  Future<void> _refreshData() async {
-    // 새로고침 시 수행할 작업
-    await Future.delayed(Duration(seconds: 1));
-
-    fetchItems();
-  }
-  Future<List<String>> getTitle(String item) async {
-    List<String> documentsList = [];
-    final db = firestore.collection("allitem").orderBy("timestamp", descending: true);
-    final QuerySnapshot querySnapshot = await db.get();
-
-    if (querySnapshot.docs.isNotEmpty) {
-      for (QueryDocumentSnapshot doc in querySnapshot.docs) {
-        documentsList.add(doc.get(item));
-        print(documentsList);
-      }
-    }
-
-    return documentsList;
-  }
-  String userName = "";
-  String userEmail = "";
-
-// 필요한 경우 다른 메서드나 속성을 추가하세요.
 }
 
 class MyHomePage extends StatefulWidget {
@@ -158,7 +118,6 @@ class _MyHomePageState extends State<MyHomePage> {
   @override
   void initState() {
     super.initState();
-    // initState에서 데이터 가져오기
     fetchItems();
     print(fetchItems());
     print("타이틀 : $items\n가격 : $price\n상세설명 : $detail");
@@ -202,7 +161,6 @@ class _MyHomePageState extends State<MyHomePage> {
   }
   @override
   Widget build(BuildContext context) {
-    final myModel = Provider.of<MyModel>(context);
     return Scaffold(
       appBar: AppView(),
       body: BodyView(),
@@ -250,7 +208,7 @@ class _MyHomePageState extends State<MyHomePage> {
   PreferredSizeWidget AppView() {
     if (Screen == 0) {
       return AppBar(
-        backgroundColor: Colors.green[900],
+        backgroundColor: appbarColor,
         automaticallyImplyLeading: false,
         title: Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -259,11 +217,12 @@ class _MyHomePageState extends State<MyHomePage> {
               children: [
                 Icon(
                   FontAwesomeIcons.legal,
+                  color: wordColor,
                 ),
                 Text(
                   "  방구석 경매",
                   style: TextStyle(
-                    color: Colors.white,
+                    color: wordColor,
                     fontWeight: FontWeight.bold,
                     fontStyle: FontStyle.italic,
                   ),
@@ -302,7 +261,7 @@ class _MyHomePageState extends State<MyHomePage> {
     }
     else if(Screen == 1){
       return AppBar(
-        backgroundColor: Colors.green[900],
+        backgroundColor: appbarColor,
         automaticallyImplyLeading: false,
         title: Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -311,11 +270,12 @@ class _MyHomePageState extends State<MyHomePage> {
               children: [
                 Icon(
                   FontAwesomeIcons.search,
+                  color: wordColor,
                 ),
                 Text(
                   "  상품 검색",
                   style: TextStyle(
-                    color: Colors.white,
+                    color: wordColor,
                     fontWeight: FontWeight.bold,
                     fontStyle: FontStyle.italic,
                   ),
@@ -353,7 +313,7 @@ class _MyHomePageState extends State<MyHomePage> {
       );
     } else {
       return AppBar(
-        backgroundColor: Colors.green[900],
+        backgroundColor: appbarColor,
         automaticallyImplyLeading: false,
         title: Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -362,11 +322,12 @@ class _MyHomePageState extends State<MyHomePage> {
               children: [
                 Icon(
                   FontAwesomeIcons.user,
+                  color: wordColor,
                 ),
                 Text(
                   "  내 정보",
                   style: TextStyle(
-                    color: Colors.white,
+                    color: wordColor,
                     fontWeight: FontWeight.bold,
                     fontStyle: FontStyle.italic,
                   ),
@@ -423,7 +384,7 @@ class _MyHomePageState extends State<MyHomePage> {
                     });
                   },
                   child: Container(
-                    height: 80,
+                    height: 150,
                     decoration: BoxDecoration(
                       border: Border.all(
                         color: Colors.black,
@@ -435,11 +396,34 @@ class _MyHomePageState extends State<MyHomePage> {
                         Expanded(
                           child: ListTile (
                             titleAlignment: ListTileTitleAlignment.center,
-                            title: Text(items[index],
-                              style: TextStyle(
-                                fontWeight: FontWeight.w900,
-                                fontSize: 25
-                              ),
+                            title: Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Container(
+                                  width: 100, // 이미지 박스의 너비
+                                  height: 100, // 이미지 박스의 높이
+                                  decoration: BoxDecoration(
+                                  // 이미지를 표시할 BoxDecoration 설정
+                                    image: DecorationImage(
+                                      image: AssetImage('assets/sample_image.jpg.png'), // 이미지 파일 경로
+                                      fit: BoxFit.cover, // 이미지의 크기를 유지하면서 박스에 맞추기
+                                    ),
+                                    borderRadius: BorderRadius.circular(10), // 이미지 박스에 둥근 테두리 적용
+                                  ),
+                                ),
+                                Container(
+                                  width: 150,
+                                  child: Text(items[index],
+                                    style: TextStyle(
+                                      fontWeight: FontWeight.w900,
+                                      fontSize: 16,
+                                    ),
+                                    softWrap: true,
+                                  ),
+                                )
+
+                              ],
                             ),
                           ),
                         ),
@@ -458,7 +442,7 @@ class _MyHomePageState extends State<MyHomePage> {
                               style: TextStyle(
                                 color: Colors.red,
                                 fontWeight: FontWeight.bold,
-                                fontSize: 20
+                                fontSize: 18
                               ),
                             ),
                           ],
@@ -482,7 +466,7 @@ class _MyHomePageState extends State<MyHomePage> {
                 style: ElevatedButton.styleFrom(
                   shape: CircleBorder(), // 원 모양으로 버튼 모양을 변경
                   padding: EdgeInsets.all(16.0), // 버튼 내부 여백 조정
-                  primary: Colors.green[900], // 버튼의 배경색 설정
+                  primary: appbarColor, // 버튼의 배경색 설정
                 ),
                 child: Icon(
                   Icons.add,
@@ -546,7 +530,12 @@ class _MyHomePageState extends State<MyHomePage> {
                         child: Text("$userEmail"),
                       ),
                       Container(
-                        child: Text("보유 코인 : ${userCoin} C"),
+                        child: Text(
+                          "보유 코인 : ${userCoin} C",
+                          style: TextStyle(
+                            fontWeight: FontWeight.bold
+                          ),
+                        ),
                       )
                     ],
                   ),
@@ -576,14 +565,17 @@ class detailItem extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        backgroundColor: Colors.green[900],
+        backgroundColor: appbarColor,
         title: Row(
           children: [
-            Icon(Icons.add_shopping_cart),
+            Icon(Icons.add_shopping_cart,
+            color: wordColor,),
             Text(
                 "상품 상세 정보",
               style: TextStyle(
-                fontStyle: FontStyle.italic
+                fontStyle: FontStyle.italic,
+                fontWeight: FontWeight.bold,
+                color: wordColor
               ),
             ),
           ],
@@ -790,8 +782,6 @@ class detailItem extends StatelessWidget {
                         'historytime' : timeStamps,
                         'pricehistory' : priceHistory,
                       });
-                      priceHistory = [];
-                      timeStamps = [];
                       Navigator.pop(context, true);
                     }
                   },
@@ -804,7 +794,7 @@ class detailItem extends StatelessWidget {
                               builder: (context) => auctionHistory(title)));
                   },
                     child: Text(
-                      "입찰 기록"
+                      "입찰 기록",
                     ))
               ],
             ),
@@ -823,7 +813,7 @@ class addItem extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        backgroundColor: Colors.green[900],
+        backgroundColor: appbarColor,
         automaticallyImplyLeading: true,
         title: Row(
           children: [
@@ -926,11 +916,15 @@ class auctionHistory extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        backgroundColor: Colors.green[900],
+        backgroundColor: appbarColor,
         title: Row(
           children: [
             Icon(FontAwesomeIcons.history),
-            Text(" 입찰 기록"),
+            Text(" 입찰 기록",
+            style: TextStyle(
+              color: wordColor,
+              fontWeight: FontWeight.bold
+            ),),
           ],
         ),
       ),
@@ -947,6 +941,8 @@ class auctionHistory extends StatelessWidget {
               //DateTime dateTime = history[i].toDate();
               history[i] = history[i].toDate().toString().substring(0,19);
             }
+            print("배열의 길이 : ${history.length}");
+            print("배열의 길이 : ${priceHistory.length}");
 
             return ListView.builder(
               itemCount: history.length,
