@@ -7,6 +7,6 @@
 구글 로그인</br>
 상품 등록</br>
 경매 입찰
-#기술 스택
+# 기술 스택
 Flutter / Dart</br>
 Firebase / Firestore, Authentication
