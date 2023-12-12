@@ -26,7 +26,10 @@ String? userEmail = "";
 int? userCoin = 0;
 int itemLength = 0;
 String addUser = "";
+List<String> image = ["assets/hipo_image.png", "assets/sample_image.png"];
+int num = 0;
 
+// 아이템 갯수 받아오기
 Future<int> itemsLength(String trade) async {
   try {
     final querySnapshot = await FirebaseFirestore.instance.collection(trade).get();
@@ -39,7 +42,7 @@ Future<int> itemsLength(String trade) async {
     return 0;
   }
 }
-
+// Firebase Authentication 구글 로그인
 Future<User?> _handleSignIn(BuildContext context) async {
   await _auth.signOut();
   await _googleSignIn.signOut();
@@ -61,7 +64,6 @@ Future<User?> _handleSignIn(BuildContext context) async {
     return null;
   }
 }
-
 Future<void> signInWithGoogle(BuildContext context) async {
   GoogleSignIn _googleSignIn = GoogleSignIn();
   GoogleSignInAccount? _account = await _googleSignIn.signIn();
@@ -89,7 +91,7 @@ class MyApp extends StatelessWidget {
     );
   }
 }
-
+//Provider
 class MyModel with ChangeNotifier {
 
   Future<bool> tradeComplete() async{
@@ -109,7 +111,7 @@ class MyHomePage extends StatefulWidget {
   _MyHomePageState createState() => _MyHomePageState();
 }
 
-
+//메인 위젯
 class _MyHomePageState extends State<MyHomePage> {
   List<String> items = [];
   List<String> price = [];
@@ -380,7 +382,7 @@ class _MyHomePageState extends State<MyHomePage> {
                     setState(() {
                       Navigator.of(context).push(
                           MaterialPageRoute(
-                              builder: (context) => detailItem(items[index], detail[index], price[index])));
+                              builder: (context) => detailItem(items[index], detail[index], price[index], image[index])));
                     });
                   },
                   child: Container(
@@ -406,7 +408,7 @@ class _MyHomePageState extends State<MyHomePage> {
                                   decoration: BoxDecoration(
                                   // 이미지를 표시할 BoxDecoration 설정
                                     image: DecorationImage(
-                                      image: AssetImage('assets/sample_image.jpg.png'), // 이미지 파일 경로
+                                      image: AssetImage(image[index]), // 이미지 파일 경로
                                       fit: BoxFit.cover, // 이미지의 크기를 유지하면서 박스에 맞추기
                                     ),
                                     borderRadius: BorderRadius.circular(10), // 이미지 박스에 둥근 테두리 적용
@@ -549,17 +551,21 @@ class _MyHomePageState extends State<MyHomePage> {
   }
 
 }
+// 아이템 상세정보 위젯
 class detailItem extends StatelessWidget {
   String? title;
   String? detail;
   String? price;
   String? uid;
+  String name = "";
+
   TextEditingController bid = TextEditingController();
 
-  detailItem(String? title, String? detail, String? price){
+  detailItem(String? title, String? detail, String? price, String image){
     this.title = title;
     this.detail = detail;
     this.price = price;
+    this.name = image;
   }
   @override
   Widget build(BuildContext context) {
@@ -583,8 +589,26 @@ class detailItem extends StatelessWidget {
       ),
       body: Container(
         child: Column(
+          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            Center(
+              child:
+              Container(
+                alignment: Alignment.center,
+                width: 200, // 이미지 박스의 너비
+                height: 200, // 이미지 박스의 높이
+                decoration: BoxDecoration(
+                  // 이미지를 표시할 BoxDecoration 설정
+                  image: DecorationImage(
+                    image: AssetImage(name), // 이미지 파일 경로
+                    fit: BoxFit.cover, // 이미지의 크기를 유지하면서 박스에 맞추기
+                  ),
+                  borderRadius: BorderRadius.circular(10), // 이미지 박스에 둥근 테두리 적용
+                ),
+              ),
+            ),
+
             Container(
               margin: EdgeInsets.all(0.0),
               child: Text(
@@ -804,6 +828,7 @@ class detailItem extends StatelessWidget {
     );
   }
 }
+// 아이템 등록 위젯
 class addItem extends StatelessWidget {
   String itemName = "";
   String price = "";
@@ -886,6 +911,7 @@ class addItem extends StatelessWidget {
     );
   }
 }
+// 입찰 기록 위젯
 class auctionHistory extends StatelessWidget {
   String? title;
 
@@ -1000,8 +1026,7 @@ class auctionHistory extends StatelessWidget {
     );
   }
 }
-
-
+// 로그인 위젯
 class MyAuthPage extends StatelessWidget {
 
 
@@ -1046,7 +1071,7 @@ class MyAuthPage extends StatelessWidget {
     );
   }
 }
-
+// 구글 로그아웃
 void _handleSignOut(BuildContext context) async {
   final FirebaseAuth _auth = FirebaseAuth.instance;
   try {
@@ -1061,7 +1086,7 @@ void _handleSignOut(BuildContext context) async {
     print("로그아웃 오류: $e");
   }
 }
-
+// 아이템 정보 Firestore에 저장을 위한 클래스
 class itemInfo{
   String? title;
   String? price;
@@ -1120,6 +1145,7 @@ class itemInfo{
   }
 
 }
+// 유저 정보를 Firestore에 저장을 위한 클래스
 class Users {
   String? name;
   String? Uid;
